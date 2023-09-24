@@ -3,13 +3,18 @@
 #include <iterator>
 
 coordinates::coordinates(int x, int y, int z)
-    : x_pos {x}, y_pos {y}, z_pos {z} {}
+    : x_pos {x}, y_pos {y}, z_pos {z} {
+    }
 
 
 
-Particle::Particle() : position {0, 0, 0} {}
+Particle::Particle()
+    : position {0, 0, 0}, force {0}, velocity {0} {
+    }
 
-Particle::Particle(int x, int y, int z) : position{x, y, z} {}
+Particle::Particle(int x, int y, int z)
+    : position {x, y, z}, force {0}, velocity {0} {
+    }
 
 bool Particle::move(const int new_x, const int new_y, const int new_z) {
     coordinates new_pos{new_x, new_y, new_z};
@@ -33,4 +38,21 @@ std::ostream& operator <<(std::ostream& os, const Particle particle) {
                             << particle.position.z_pos << ")\n"
        << "  # other information to be implemented: " /* TODO */; 
     return os;
+}
+
+
+std::vector<Particle> Particle::find_neighbours(const std::vector<Particle> &all_particles,
+                                                const                double dist) {
+    std::vector<Particle> neighour_particles {};
+    neighour_particles.reserve(all_particles.size());
+
+    for (auto &other : all_particles) {
+        double distance {this->distance(other)};
+        
+        if (distance <= dist && distance != 0) {
+            neighour_particles.emplace_back(other);
+        }
+    }
+
+    return neighour_particles;
 }
