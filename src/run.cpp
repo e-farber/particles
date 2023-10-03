@@ -1,31 +1,30 @@
 #include <iostream>
 #include <string>
+#include "SimulationConfig/simulationconfig.hpp"
 #include "particle.hpp"
-
-int particle_amount {100};
-
-void create_particles(std::vector<Particle> &all_particles, int amount) {
-    for (int index = 0; index < amount; ++index) {
-        all_particles.emplace_back(index, -index, index);
-    }    
-}
+#include "simulation.hpp"
 
 
 int main() {
-    std::vector<Particle> all_particles;
-    all_particles.reserve(particle_amount);
-    create_particles(all_particles, 100);
+    // cube corner points
+    std::vector<std::vector<float>> cube = {{0.0,  0.0, 0.0}, {2.5,  0.0, 0.0}, {0.0,  0.0, 2.5},
+                                            {2.5,  0.0, 2.5}, {0.0, -2.5, 0.0}, {2.5, -2.5, 0.0},
+                                            {0.0, -2.5, 2.5}, {2.5, -2.5, 2.5}};
+    // create and fill vector of particles
+    std::vector<Particle> all_particles {};
+    for (auto &point : cube) {
+        all_particles.emplace_back(point[0], point[1], point[2]);
+    }
 
-    std::cout << "distance: " << all_particles[0].distance(all_particles[99]) << std::endl;
-
-    std::cout << "distance: " << all_particles[13].distance(all_particles[18]) << std::endl;
-
-    std::cout << all_particles[38] << std::endl;
-    
-    std::cout << all_particles[50].find_neighbours(all_particles, 9.5).size() << std::endl;
-    for (auto &it : all_particles[30].find_neighbours(all_particles, 9.5)) {
-        std::cout << "distance = " << all_particles[30].distance(it) << "\n";
-        std::cout << it << "\n";
+    Simulation sim;
+    SimulationConfig cube_config(100, 0.05, all_particles);
+    for (int iteration = 0; iteration < cube_config.total_iterations; ++iteration) {
+        sim.to_VTK("cube", cube_config);
+        std::cout << "\n\n########## iteration " << iteration << " ##########\n";
+        for (auto &particle : cube_config.all_particles) {
+            std::cout << particle << "\n------------\n";
+        }
+        sim.execute_timestep(cube_config.timestep, cube_config.all_particles);
     }
     
     return 0;
