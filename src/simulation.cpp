@@ -60,19 +60,27 @@ void Simulation::execute_timestep(float timestep, std::vector<Particle> &all_par
         for (auto &other_particle : all_particles) {
             // case (particle == other_particle) is handled by calc_force
             VectorAddition_ip(particle.force, particle.calc_force(other_particle));
+            //  if (iteration_count % 1000 == 0) {
+            // std::cout << particle.calc_force(other_particle)[0] << ", " <<
+            //              particle.calc_force(other_particle)[1] << ", " <<
+            //              particle.calc_force(other_particle)[2] << std::endl;
+            // }
         }
+
+       
     }
 
     // calculate new velocity
     for (auto &particle : all_particles) {
         particle.old_velocity = particle.velocity;
-        std::vector<float> new_velocity {ScalarMultiplication(timestep, particle.force)};
+        std::vector<float> new_velocity {ScalarMultiplication(timestep, particle.force)}; // MISTAKE IS HERE TODO FIX
         VectorAddition_ip(particle.velocity, new_velocity); 
     }
 
     // calculate new position
     for (auto &particle : all_particles) {
-        std::vector<float> distance_moved {ScalarMultiplication(timestep, particle.velocity)};
+        auto copy = particle.velocity;
+        std::vector<float> distance_moved {ScalarMultiplication(timestep, copy)};
         particle.move_by(distance_moved);
     }
 
