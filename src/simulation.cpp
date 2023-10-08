@@ -5,6 +5,10 @@
 #include <iomanip>
 #include "auxiliary_math.hpp"
 
+Simulation::Simulation(const SimulationConfig &simconfig)
+    : configurations {simconfig} {
+}
+
 
 bool Simulation::to_VTK(std::string_view fileBaseName, const SimulationConfig &simconfig) {
 /*
@@ -39,48 +43,53 @@ https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html
             << "DIMENSIONS 1 1 1\n"
             << "POINTS " << particles.size() << " float\n";
     for (auto &particle : particles) {
-        vtkFile << particle.position.x_pos << " " << particle.position.y_pos << " "
-                << particle.position.z_pos << "\n";
+        vtkFile << particle.position << "\n";
     }
 
-    // vtkFile << "POINT_DATA " << particles.size() << "\n";
-    // TODO
+    vtkFile << "\n";
+
+    vtkFile << "POINT_DATA " << particles.size() << "\n";
+    // particle velocities
+    vtkFile << "VECTORS velocities float" << "\n";
+    for (auto &particle : particles) {
+      vtkFile << particle.velocity << "\n";
+    }
+
+    vtkFile << "\n";
+
+    // particle forces
+    vtkFile << "VECTORS forces float" << "\n";
+    for (auto &particle : particles) {
+      vtkFile << particle.force << "\n";
+    }
+
 
     vtkFile << std::endl;
     return true;
 }
 
 
-void Simulation::execute_timestep(float timestep, std::vector<Particle> &all_particles) {
+void Simulation::execute_timestep(float timestep_dur, std::vector<Particle> &all_particles) {
     // calculate new force
     for (auto &particle : all_particles) {
-        particle.force = {0.0,
-                          0.0,
-                          0.0};
+        particle.force = {0.0, 0.0, 0.0};
+        
         for (auto &other_particle : all_particles) {
             // case (particle == other_particle) is handled by calc_force
-            VectorAddition_ip(particle.force, particle.calc_force(other_particle));
-            //  if (iteration_count % 1000 == 0) {
-            // std::cout << particle.calc_force(other_particle)[0] << ", " <<
-            //              particle.calc_force(other_particle)[1] << ", " <<
-            //              particle.calc_force(other_particle)[2] << std::endl;
-            // }
+            particle.force += particle.calc_force(other_particle);
         }
-
-       
     }
 
     // calculate new velocity
     for (auto &particle : all_particles) {
         particle.old_velocity = particle.velocity;
-        std::vector<float> new_velocity {ScalarMultiplication(timestep, particle.force)}; // MISTAKE IS HERE TODO FIX
-        VectorAddition_ip(particle.velocity, new_velocity); 
+        vec3D new_velocity {particle.force * timestep_dur}; 
+        particle.velocity += new_velocity;
     }
 
     // calculate new position
     for (auto &particle : all_particles) {
-        auto copy = particle.velocity;
-        std::vector<float> distance_moved {ScalarMultiplication(timestep, copy)};
+        vec3D distance_moved {particle.velocity * timestep_dur};
         particle.move_by(distance_moved);
     }
 

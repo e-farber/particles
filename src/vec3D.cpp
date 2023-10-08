@@ -89,8 +89,6 @@ vec3D operator/ (const float scalar, vec3D vec) {
 }
 
 std::ostream& operator<<(std::ostream& os, const vec3D vec) {
-    os << "(" << vec.x << ", "
-              << vec.y << ", "
-              << vec.z << ")";
+    os << vec.x << " " << vec.y << " " << vec.z;
     return os;
 }
