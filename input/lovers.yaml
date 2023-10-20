@@ -1,0 +1,7 @@
+Simulation_Name     : "lovers"
+Iterations          : 200000
+Timestep_Duration   : 0.0002
+Cutoff_Value        : 3.0
+Particle_Positions  :
+                     - [-1.0, 0.0, 0.0]
+                     - [1.0, 0.0, 0.0]

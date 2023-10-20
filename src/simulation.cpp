@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <filesystem>
 #include "auxiliary_math.hpp"
 
 Simulation::Simulation(const SimulationConfig &simconfig)
@@ -10,16 +11,31 @@ Simulation::Simulation(const SimulationConfig &simconfig)
 }
 
 
-bool Simulation::to_VTK(std::string_view fileBaseName, const SimulationConfig &simconfig) {
+bool Simulation::to_VTK(const SimulationConfig &simconfig) {
 /*
-VTK file format documentation
+VTK file format documentation/
 https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html
 */
+    // create output directory if not exists
+    if (not std::filesystem::exists("../output/")) {
+        std::filesystem::create_directory("../output/");
+    }
 
     // generate file name
     std::ostringstream fileName {};
-    size_t digit_amount {std::to_string(configurations.total_iterations).length()};
-    fileName << "../output/" << fileBaseName << "_"
+    size_t digit_amount {};
+    const int powers_of_ten[6] {10, 100, 1'000, 10'000, 100'000, 1'000'000};
+    for (int index {0}; index < 6; ++index) {
+        if (configurations.total_iterations == powers_of_ten[index]) {
+            digit_amount = std::to_string(configurations.total_iterations).length() - 1;
+            break;
+        }
+        else {
+            digit_amount = std::to_string(configurations.total_iterations).length();
+        }
+    }
+   
+    fileName << "../output/" << configurations.sim_name << "_"
              << std::setfill('0') << std::setw(digit_amount) << iteration_count
              << ".vtk";
 
@@ -94,4 +110,41 @@ void Simulation::execute_timestep(float timestep_dur, std::vector<Particle> &all
     }
 
     ++iteration_count;
+}
+
+void Simulation::simulate() {
+    const std::string line(43, '-');
+    std::cout << line << "\n"
+              << "Simulation start.\n"
+              << "Simulating " << configurations.all_particles.size() << " particles\n"
+              << "over " << configurations.total_iterations << " iterations\n"
+              << "with " << configurations.timestep_dur << " seconds between each iteration\n"
+              << "for a total duration of "
+              << configurations.total_iterations * configurations.timestep_dur << " seconds.\n"
+              << line << "\n" << std::endl;
+
+    std::cout << "->" << std::string(40, '#') << "|";
+
+    using seconds = std::chrono::seconds;
+    auto start_time {std::chrono::system_clock::now()};
+
+    for (int iteration = 0; iteration < configurations.total_iterations; ++iteration) {
+        if (iteration % (configurations.total_iterations / 20) == 0) {
+            const int x_out_of_ten {1 + (iteration * 20) / configurations.total_iterations};
+            std::cout << std::flush << "\r" << std::string(x_out_of_ten * 2, '-') << "->";
+        }
+        
+        to_VTK(configurations);
+        
+        execute_timestep(configurations.timestep_dur,
+                         configurations.all_particles);
+    }
+
+    auto end_time {std::chrono::system_clock::now()};
+    std::chrono::duration total_time {std::chrono::duration_cast<seconds>(end_time - start_time)};
+    std::cout << "\n\n"
+              << line << "\n"
+              << "Simulation end.\n"
+              << "Time taken: " << total_time.count()  << " seconds.\n"
+              << line << std::endl;
 }
